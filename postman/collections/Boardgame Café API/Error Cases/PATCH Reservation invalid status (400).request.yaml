@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/reservations/{{reservationId}}/status"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "status": "bad"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 400", function () { pm.response.to.have.status(400); });
+      pm.test("error.code is VALIDATION_ERROR", function () { pm.expect(pm.response.json().error.code).to.eql("VALIDATION_ERROR"); });
+    language: text/javascript
+examples: ./.resources/PATCH Reservation invalid status (400).resources/examples
+order: 4000

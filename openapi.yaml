@@ -1,0 +1,566 @@
+openapi: 3.0.3
+info:
+  title: Boardgame Café API
+  description: >
+    API ระบบข้อมูลบอร์ดเกมและการจองโต๊ะของคาเฟ่บอร์ดเกม (โครงงานระยะที่ 2 — Pno 8)
+    ทุก error ใช้รูปแบบเดียวกันคือ `{ "error": { "code": "...", "message": "..." } }`
+    ระบบนี้ยังไม่มีการยืนยันตัวตน (ไม่มี JWT) ทุก endpoint เรียกได้โดยไม่ต้องส่ง token
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Development server
+tags:
+  - name: System
+    description: ตรวจสอบสถานะระบบ
+  - name: Boardgames
+    description: จัดการบอร์ดเกมและรีวิว
+  - name: Categories
+    description: จัดการหมวดหมู่บอร์ดเกม
+  - name: Reservations
+    description: จองโต๊ะพร้อมระบุเกม (ใช้ Transaction และตรวจวันหยุดจาก API ภายนอก)
+components:
+  parameters:
+    BoardgameId:
+      name: id
+      in: path
+      required: true
+      description: รหัสบอร์ดเกม (boardgames.id)
+      schema: { type: integer }
+      example: 1
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      description: รหัสหมวดหมู่ (categories.id)
+      schema: { type: integer }
+      example: 1
+    ReservationId:
+      name: id
+      in: path
+      required: true
+      description: รหัสการจอง (reservations.id)
+      schema: { type: integer }
+      example: 1
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: "VALIDATION_ERROR" }
+            message:
+              {
+                type: string,
+                example: "กรุณาระบุ name, min_players, max_players, category_id",
+              }
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string, example: "สำเร็จ" }
+    BoardgameSummary:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "Ticket to Ride" }
+        min_players: { type: integer, example: 2 }
+        max_players: { type: integer, example: 5 }
+        category_name: { type: string, example: "วางแผน (Strategy)" }
+    ReviewInList:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        reviewer_name: { type: string, example: "สมชาย" }
+        rating: { type: integer, minimum: 1, maximum: 5, example: 5 }
+        comment:
+          { type: string, nullable: true, example: "เล่นง่าย เหมาะกับครอบครัว" }
+        created_at: { type: string, format: date-time }
+    BoardgameDetail:
+      allOf:
+        - $ref: "#/components/schemas/BoardgameSummary"
+        - type: object
+          properties:
+            reviews:
+              type: array
+              items:
+                type: object
+                properties:
+                  reviewer_name: { type: string }
+                  rating: { type: integer }
+                  comment: { type: string, nullable: true }
+                  created_at: { type: string, format: date-time }
+    BoardgameInput:
+      type: object
+      required: [name, min_players, max_players, category_id]
+      properties:
+        name: { type: string, example: "Carcassonne" }
+        min_players: { type: integer, minimum: 1, example: 2 }
+        max_players:
+          {
+            type: integer,
+            description: ต้องไม่น้อยกว่า min_players,
+            example: 5,
+          }
+        category_id:
+          {
+            type: integer,
+            description: ต้องเป็น id ของหมวดหมู่ที่มีอยู่จริง,
+            example: 1,
+          }
+    BoardgameUpdate:
+      type: object
+      description: ส่งอย่างน้อย 1 ฟิลด์
+      properties:
+        name: { type: string, example: "Carcassonne (ฉบับใหม่)" }
+        min_players: { type: integer, example: 2 }
+        max_players: { type: integer, example: 6 }
+        category_id: { type: integer, example: 3 }
+    Category:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "วางแผน (Strategy)" }
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          {
+            type: string,
+            description: ชื่อหมวดหมู่ ห้ามซ้ำกับที่มีอยู่,
+            example: "สงคราม (War)",
+          }
+    ReviewInput:
+      type: object
+      required: [reviewer_name, rating]
+      properties:
+        reviewer_name: { type: string, example: "สมหญิง" }
+        rating: { type: integer, minimum: 1, maximum: 5, example: 4 }
+        comment: { type: string, example: "สนุกมาก" }
+    ReservationInput:
+      type: object
+      required:
+        [
+          customer_name,
+          customer_phone,
+          reservation_date,
+          reservation_time,
+          party_size,
+        ]
+      properties:
+        customer_name: { type: string, example: "วีระ ใจดี" }
+        customer_phone:
+          {
+            type: string,
+            description: ใช้ระบุลูกค้า ถ้ามีเบอร์นี้อยู่แล้วจะใช้ลูกค้าเดิม,
+            example: "0812345678",
+          }
+        customer_email: { type: string, example: "weera@example.com" }
+        reservation_date: { type: string, format: date, example: "2026-12-05" }
+        reservation_time: { type: string, example: "18:00" }
+        party_size: { type: integer, minimum: 1, example: 4 }
+        boardgame_ids:
+          type: array
+          description: รหัสบอร์ดเกมที่ต้องการเล่น (ไม่ระบุก็ได้) ทุก id ต้องมีอยู่จริง
+          items: { type: integer }
+          example: [1, 2]
+    HolidayCheck:
+      type: object
+      description: >
+        ผลตรวจวันหยุดราชการไทยจาก API ภายนอก (Nager.Date) ใช้ Timeout 3 วินาที และ Retry สูงสุด 2 ครั้ง
+        หากล้มเหลวทั้งหมดจะ fallback เป็น checked=false แต่การจองยังสำเร็จตามปกติ
+      properties:
+        checked:
+          { type: boolean, description: ตรวจสอบสำเร็จหรือไม่, example: true }
+        is_holiday:
+          {
+            type: boolean,
+            nullable: true,
+            description: เป็นวันหยุดหรือไม่ (null เมื่อตรวจไม่ได้),
+            example: true,
+          }
+        holiday_name: { type: string, nullable: true, example: "วันรัฐธรรมนูญ" }
+        source: { type: string, enum: [api, fallback, skipped], example: api }
+        attempts:
+          {
+            type: integer,
+            description: จำนวนครั้งที่เรียก API (เมื่อ source=api),
+            example: 1,
+          }
+        note:
+          {
+            type: string,
+            description: ข้อความอธิบาย (เมื่อ fallback หรือ skipped),
+          }
+    ReservationCreated:
+      type: object
+      properties:
+        message: { type: string, example: "ทำการจองสำเร็จ" }
+        data:
+          type: object
+          properties:
+            id: { type: integer, example: 4 }
+            customer_id: { type: integer, example: 4 }
+            reservation_date: { type: string, example: "2026-12-05" }
+            reservation_time: { type: string, example: "18:00" }
+            party_size: { type: integer, example: 4 }
+            status: { type: string, enum: [pending], example: pending }
+            boardgame_ids:
+              type: array
+              items: { type: integer }
+              example: [1, 2]
+        holiday_check: { $ref: "#/components/schemas/HolidayCheck" }
+    ReservationListItem:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        reservation_date:
+          {
+            type: string,
+            format: date-time,
+            example: "2026-08-19T17:00:00.000Z",
+          }
+        reservation_time: { type: string, example: "18:00:00" }
+        party_size: { type: integer, example: 4 }
+        status:
+          {
+            type: string,
+            enum: [pending, confirmed, cancelled],
+            example: confirmed,
+          }
+        customer_name: { type: string, example: "วีระ ใจดี" }
+        customer_phone: { type: string, example: "0812345678" }
+        boardgames:
+          type: array
+          items: { type: string }
+          example: ["Ticket to Ride", "Catan"]
+  responses:
+    ValidationError:
+      description: ข้อมูลที่ส่งมาไม่ครบหรือไม่ถูกต้อง (VALIDATION_ERROR)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: ไม่พบข้อมูลตาม id ที่ระบุ (NOT_FOUND)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    InternalError:
+      description: >
+        ข้อผิดพลาดภายในระบบ (INTERNAL_SERVER_ERROR) เกิดได้เช่น อ้างอิง id ที่ไม่มีอยู่จริง
+        (category_id / boardgame_ids), ละเมิดเงื่อนไขของฐานข้อมูล (เช่น max_players น้อยกว่า min_players,
+        ชื่อหมวดหมู่ซ้ำ) หรือส่ง body ที่ไม่ใช่ JSON
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+paths:
+  /:
+    get:
+      tags: [System]
+      summary: ตรวจสอบสถานะ API
+      responses:
+        "200":
+          description: ระบบพร้อมใช้งาน
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    { type: string, example: "Boardgame API พร้อมใช้งาน" }
+  /api/v1/boardgames:
+    get:
+      tags: [Boardgames]
+      summary: ค้นหาบอร์ดเกมตามจำนวนผู้เล่น (Use Case 2)
+      description: >
+        คืนรายการบอร์ดเกมทั้งหมดเรียงตาม id ถ้าระบุ `minPlayers` จะได้เฉพาะเกมที่รองรับผู้เล่นได้ไม่น้อยกว่าค่านั้น
+        (max_players >= minPlayers) ถ้าระบุ `maxPlayers` จะได้เฉพาะเกมที่เริ่มเล่นได้ไม่เกินค่านั้น (min_players <= maxPlayers)
+      parameters:
+        - name: minPlayers
+          in: query
+          required: false
+          description: จำนวนผู้เล่นขั้นต่ำที่ต้องรองรับ
+          schema: { type: integer }
+          example: 4
+        - name: maxPlayers
+          in: query
+          required: false
+          description: จำนวนผู้เล่นสูงสุดที่ต้องเล่นได้
+          schema: { type: integer }
+          example: 6
+      responses:
+        "200":
+          description: สำเร็จ (ไม่พบข้อมูลจะได้ array ว่าง)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "สำเร็จ" }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/BoardgameSummary" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Boardgames]
+      summary: เพิ่มบอร์ดเกม (Use Case 1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BoardgameInput" }
+      responses:
+        "201":
+          description: เพิ่มสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    { type: string, example: "เพิ่มข้อมูลบอร์ดเกมสำเร็จ" }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer, example: 4 }
+                      name: { type: string }
+                      min_players: { type: integer }
+                      max_players: { type: integer }
+                      category_id: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/boardgames/{id}:
+    parameters:
+      - $ref: "#/components/parameters/BoardgameId"
+    get:
+      tags: [Boardgames]
+      summary: รายละเอียดบอร์ดเกมพร้อมรีวิว (Use Case 6)
+      responses:
+        "200":
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "สำเร็จ" }
+                  data: { $ref: "#/components/schemas/BoardgameDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    patch:
+      tags: [Boardgames]
+      summary: แก้ไขบอร์ดเกมบางฟิลด์ (Use Case 1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BoardgameUpdate" }
+      responses:
+        "200":
+          description: แก้ไขสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Boardgames]
+      summary: ลบบอร์ดเกม (Use Case 1)
+      description: รีวิวและรายการเกมในการจองที่เกี่ยวข้องจะถูกลบตามไปด้วย (ON DELETE CASCADE)
+      responses:
+        "200":
+          description: ลบสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/boardgames/{id}/reviews:
+    parameters:
+      - $ref: "#/components/parameters/BoardgameId"
+    get:
+      tags: [Boardgames]
+      summary: ดูรีวิวทั้งหมดของบอร์ดเกม (เรียงใหม่ไปเก่า)
+      responses:
+        "200":
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "สำเร็จ" }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReviewInList" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Boardgames]
+      summary: เขียนรีวิวให้บอร์ดเกม (Use Case 6)
+      description: ถ้า id ของบอร์ดเกมไม่มีอยู่จริง ระบบปัจจุบันตอบ 500 (ไม่ได้ตรวจก่อนบันทึก)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewInput" }
+      responses:
+        "201":
+          description: เพิ่มรีวิวสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "เพิ่มรีวิวสำเร็จ" }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: integer, example: 4 }
+                      boardgame_id: { type: integer, example: 1 }
+                      reviewer_name: { type: string }
+                      rating: { type: integer }
+                      comment: { type: string, nullable: true }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/categories:
+    get:
+      tags: [Categories]
+      summary: รายการหมวดหมู่ทั้งหมด (Use Case 5)
+      responses:
+        "200":
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "สำเร็จ" }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Category" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Categories]
+      summary: เพิ่มหมวดหมู่ (Use Case 5)
+      description: ชื่อหมวดหมู่ซ้ำกับที่มีอยู่ ระบบปัจจุบันตอบ 500
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "201":
+          description: เพิ่มสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "เพิ่มหมวดหมู่สำเร็จ" }
+                  data: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CategoryId"
+    patch:
+      tags: [Categories]
+      summary: แก้ไขชื่อหมวดหมู่ (Use Case 5)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryInput" }
+      responses:
+        "200":
+          description: แก้ไขสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Categories]
+      summary: ลบหมวดหมู่ (Use Case 5)
+      description: ลบไม่ได้ถ้ายังมีบอร์ดเกมอยู่ในหมวดหมู่นี้ (ตอบ 409 CATEGORY_IN_USE)
+      responses:
+        "200":
+          description: ลบสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: มีบอร์ดเกมใช้หมวดหมู่นี้อยู่ (CATEGORY_IN_USE)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/reservations:
+    get:
+      tags: [Reservations]
+      summary: ดูรายการจองทั้งหมด (Use Case 4)
+      responses:
+        "200":
+          description: สำเร็จ เรียงตามวันและเวลาที่จอง
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "สำเร็จ" }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReservationListItem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Reservations]
+      summary: จองโต๊ะพร้อมระบุเกม (Use Case 3)
+      description: >
+        บันทึกลูกค้า การจอง และเกมที่เลือกใน Transaction เดียวกัน (ล้มเหลวจะ rollback ทั้งหมด)
+        สถานะเริ่มต้นเป็น `pending` ก่อนบันทึก ระบบเรียก API ภายนอก (Nager.Date) ตรวจว่าวันที่จองเป็นวันหยุดราชการไทยหรือไม่
+        โดยมี Timeout 3 วินาทีต่อครั้ง และ Retry อีก 2 ครั้งเมื่อเกิด network error / timeout / 5xx
+        หากล้มเหลวทั้งหมดจะไม่ทำให้การจองล้มเหลว แต่ `holiday_check.checked` จะเป็น false (fallback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReservationInput" }
+      responses:
+        "201":
+          description: จองสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReservationCreated" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/reservations/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+    patch:
+      tags: [Reservations]
+      summary: อัปเดตสถานะการจอง (Use Case 4)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, cancelled]
+                  example: confirmed
+      responses:
+        "200":
+          description: อัปเดตสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }

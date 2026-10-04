@@ -1,0 +1,16 @@
+{
+	"id": "b824cec4-2aca-45c1-8030-701ed11c519d",
+	"name": "boardgame-api-dev",
+	"values": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-10-04T12:00:02.559Z",
+	"_postman_exported_using": "Postman/12.30.6"
+}

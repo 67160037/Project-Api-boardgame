@@ -1,3 +1,4 @@
+-- Active: 1786894670523@@127.0.0.1@3306@boardgame_db
 USE boardgame_db;
 
 INSERT INTO categories (name) VALUES

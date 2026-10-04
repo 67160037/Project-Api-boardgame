@@ -1,0 +1,12 @@
+$kind: http-request
+description: ตรวจสอบสถานะ API
+url: "{{baseUrl}}/"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () { pm.response.to.have.status(200); });
+      pm.test("Response has message", function () { pm.expect(pm.response.json()).to.have.property("message"); });
+    language: text/javascript
+examples: ./.resources/GET Health Check.resources/examples
+order: 1000

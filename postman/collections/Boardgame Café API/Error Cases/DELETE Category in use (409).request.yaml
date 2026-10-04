@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+method: DELETE
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 409", function () { pm.response.to.have.status(409); });
+      pm.test("error.code is CATEGORY_IN_USE", function () { pm.expect(pm.response.json().error.code).to.eql("CATEGORY_IN_USE"); });
+    language: text/javascript
+examples: ./.resources/DELETE Category in use (409).resources/examples
+order: 6000

@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/boardgames/{{boardgameId}}"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "max_players": 6
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () { pm.response.to.have.status(200); });
+      pm.test("Response has message", function () { pm.expect(pm.response.json()).to.have.property("message"); });
+    language: text/javascript
+examples: ./.resources/PATCH Update Boardgame.resources/examples
+order: 4000

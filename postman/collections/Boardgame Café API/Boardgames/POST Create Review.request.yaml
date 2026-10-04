@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/boardgames/{{boardgameId}}/reviews"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "reviewer_name": "สมหญิง",
+      "rating": 4,
+      "comment": "สนุกมาก"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () { pm.response.to.have.status(201); });
+      pm.test("Response has data", function () { pm.expect(pm.response.json()).to.have.property("data"); });
+    language: text/javascript
+examples: ./.resources/POST Create Review.resources/examples
+order: 5000

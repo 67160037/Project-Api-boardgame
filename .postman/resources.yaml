@@ -1,0 +1,15 @@
+# Use this workspace to collaborate
+workspace:
+  id: ebf816e2-8ba2-423b-8bed-7d8b6df0d785
+
+localResources:
+  collections:
+    - ../postman_collection.json
+  environments:
+    - ../environment.json
+  specs:
+    - ../openapi.yaml
+
+cloudResources:
+  collections:
+    ../postman/collections/Boardgame Café API: 2c7496ae-1790-4620-b7b0-7134104c969e

@@ -1,0 +1,32 @@
+$kind: http-request
+description: ตรวจวันหยุดจาก API ภายนอก (retry/timeout/fallback) — ถ้า API ภายนอกล่ม holiday_check.checked จะเป็น false แต่ยังจองสำเร็จ
+url: "{{baseUrl}}/api/v1/reservations"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "customer_name": "วีระ ใจดี",
+      "customer_phone": "0812345678",
+      "customer_email": "weera@example.com",
+      "reservation_date": "2026-12-10",
+      "reservation_time": "18:00",
+      "party_size": 4,
+      "boardgame_ids": [
+        "{{boardgameId}}"
+      ]
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () { pm.response.to.have.status(201); });
+      pm.test("Response has data", function () { pm.expect(pm.response.json()).to.have.property("data"); });
+      pm.test("Response has holiday_check", function () { pm.expect(pm.response.json()).to.have.property("holiday_check"); });
+      pm.test("holiday_check.checked is boolean", function () { pm.expect(pm.response.json().holiday_check.checked).to.be.a("boolean"); });
+      pm.test("status is pending", function () { pm.expect(pm.response.json().data.status).to.eql("pending"); });
+      pm.collectionVariables.set("reservationId", pm.response.json().data.id);
+    language: text/javascript
+examples: ./.resources/POST Create Reservation.resources/examples
+order: 1000

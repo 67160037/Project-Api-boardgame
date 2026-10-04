@@ -1,0 +1,4 @@
+name: boardgame-api-dev
+values:
+  - key: baseUrl
+    value: 'http://localhost:3000'

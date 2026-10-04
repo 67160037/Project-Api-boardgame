@@ -1,0 +1,68 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/reservations"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json; charset=utf-8
+  body:
+    type: json
+    content: |-
+      {
+        "message": "สำเร็จ",
+        "data": [
+          {
+            "id": 1,
+            "reservation_date": "2026-08-19T17:00:00.000Z",
+            "reservation_time": "18:00:00",
+            "party_size": 4,
+            "status": "confirmed",
+            "customer_name": "วีระ ใจดี",
+            "customer_phone": "0812345678",
+            "boardgames": [
+              "Ticket to Ride",
+              "Catan"
+            ]
+          },
+          {
+            "id": 2,
+            "reservation_date": "2026-08-20T17:00:00.000Z",
+            "reservation_time": "19:30:00",
+            "party_size": 2,
+            "status": "pending",
+            "customer_name": "สุดา รักเกม",
+            "customer_phone": "0898765432",
+            "boardgames": [
+              "Codenames"
+            ]
+          },
+          {
+            "id": 3,
+            "reservation_date": "2026-08-21T17:00:00.000Z",
+            "reservation_time": "17:00:00",
+            "party_size": 6,
+            "status": "pending",
+            "customer_name": "ชูใจ บอร์ดเกมเมอร์",
+            "customer_phone": "0865554321",
+            "boardgames": [
+              "Ticket to Ride",
+              "Codenames"
+            ]
+          },
+          {
+            "id": 4,
+            "reservation_date": "2026-12-09T17:00:00.000Z",
+            "reservation_time": "18:00:00",
+            "party_size": 4,
+            "status": "pending",
+            "customer_name": "วีระ ใจดี",
+            "customer_phone": "0812345678",
+            "boardgames": [
+              "Carcassonne"
+            ]
+          }
+        ]
+      }
+order: 1000

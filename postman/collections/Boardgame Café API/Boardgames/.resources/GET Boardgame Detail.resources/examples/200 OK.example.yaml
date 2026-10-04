@@ -1,0 +1,24 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/boardgames/4"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json; charset=utf-8
+  body:
+    type: json
+    content: |-
+      {
+        "message": "สำเร็จ",
+        "data": {
+          "id": 4,
+          "name": "Carcassonne",
+          "min_players": 2,
+          "max_players": 5,
+          "category_name": "หมวดทดสอบ 1791010743 (แก้ไข)",
+          "reviews": []
+        }
+      }
+order: 1000

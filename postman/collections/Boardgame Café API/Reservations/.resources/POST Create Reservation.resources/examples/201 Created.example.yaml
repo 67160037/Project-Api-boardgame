@@ -1,0 +1,50 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/reservations"
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "customer_name": "วีระ ใจดี",
+        "customer_phone": "0812345678",
+        "customer_email": "weera@example.com",
+        "reservation_date": "2026-12-10",
+        "reservation_time": "18:00",
+        "party_size": 4,
+        "boardgame_ids": [
+          "4"
+        ]
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json; charset=utf-8
+  body:
+    type: json
+    content: |-
+      {
+        "message": "ทำการจองสำเร็จ",
+        "data": {
+          "id": 4,
+          "customer_id": 1,
+          "reservation_date": "2026-12-10",
+          "reservation_time": "18:00",
+          "party_size": 4,
+          "status": "pending",
+          "boardgame_ids": [
+            "4"
+          ]
+        },
+        "holiday_check": {
+          "checked": true,
+          "is_holiday": true,
+          "holiday_name": "วันรัฐธรรมนูญ",
+          "source": "api",
+          "attempts": 1
+        }
+      }
+order: 1000

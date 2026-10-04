@@ -1,0 +1,14 @@
+$kind: collection
+description: โครงงานระยะที่ 2 (Pno 8) — ทดสอบทุก endpoint พร้อมตัวอย่าง response ที่บันทึกไว้ รันด้วย Newman ได้ (ลำดับ request มีความสำคัญ)
+variables:
+  categoryId: ""
+  boardgameId: ""
+  reservationId: ""
+  categoryName: ""
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      if (!pm.environment.get("baseUrl") && !pm.collectionVariables.get("baseUrl")) {
+        console.error("baseUrl ยังไม่ได้ตั้งค่า: เลือก Environment boardgame-api-dev ก่อนรัน");
+      }
+    language: text/javascript

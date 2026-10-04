@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/categories"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{categoryName}}"
+    }
+scripts:
+  - type: beforeRequest
+    code: pm.collectionVariables.set("categoryName", "หมวดทดสอบ " + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () { pm.response.to.have.status(201); });
+      pm.test("Response has data", function () { pm.expect(pm.response.json()).to.have.property("data"); });
+      pm.collectionVariables.set("categoryId", pm.response.json().data.id);
+    language: text/javascript
+examples: ./.resources/POST Create Category.resources/examples
+order: 2000

@@ -1,0 +1,19 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/boardgames/999999"
+  method: GET
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Content-Type: application/json; charset=utf-8
+  body:
+    type: json
+    content: |-
+      {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "ไม่พบบอร์ดเกม id=999999"
+        }
+      }
+order: 1000

@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/boardgames"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Carcassonne",
+      "min_players": 2,
+      "max_players": 5,
+      "category_id": "{{categoryId}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 201", function () { pm.response.to.have.status(201); });
+      pm.test("Response has data", function () { pm.expect(pm.response.json()).to.have.property("data"); });
+      pm.collectionVariables.set("boardgameId", pm.response.json().data.id);
+    language: text/javascript
+examples: ./.resources/POST Create Boardgame.resources/examples
+order: 2000

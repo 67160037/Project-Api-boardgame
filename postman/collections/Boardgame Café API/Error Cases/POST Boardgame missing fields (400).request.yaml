@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/boardgames"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "ไม่ครบ"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 400", function () { pm.response.to.have.status(400); });
+      pm.test("error.code is VALIDATION_ERROR", function () { pm.expect(pm.response.json().error.code).to.eql("VALIDATION_ERROR"); });
+    language: text/javascript
+examples: ./.resources/POST Boardgame missing fields (400).resources/examples
+order: 1000

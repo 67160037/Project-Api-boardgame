@@ -1,0 +1,34 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/boardgames"
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "name": "Carcassonne",
+        "min_players": 2,
+        "max_players": 5,
+        "category_id": "4"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json; charset=utf-8
+  body:
+    type: json
+    content: |-
+      {
+        "message": "เพิ่มข้อมูลบอร์ดเกมสำเร็จ",
+        "data": {
+          "id": 4,
+          "name": "Carcassonne",
+          "min_players": 2,
+          "max_players": 5,
+          "category_id": "4"
+        }
+      }
+order: 1000
