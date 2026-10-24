@@ -2,6 +2,14 @@ DROP DATABASE IF EXISTS boardgame_db;
 CREATE DATABASE boardgame_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE boardgame_db;
 
+-- บัญชีพนักงาน; สมัครผ่าน STAFF_SIGNUP_KEY และยืนยันด้วย session cookie
+CREATE TABLE staff_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(200) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- หมวดหมู่บอร์ดเกม
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,

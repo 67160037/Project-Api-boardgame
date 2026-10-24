@@ -1,0 +1,41 @@
+.reservation-card .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.reservation-card .badge-pending {
+  color: #754700;
+  background: #fff0c2;
+  border-color: #e6bd5a;
+}
+
+.reservation-card .badge-pending::before {
+  content: "●";
+  color: #bd7800;
+}
+
+.reservation-card .badge-confirmed {
+  color: #14532d;
+  background: #dcfce7;
+  border-color: #86cf9d;
+}
+
+.reservation-card .badge-confirmed::before {
+  content: "✓";
+  color: #16803c;
+}
+
+.reservation-card .badge-cancelled {
+  color: #842323;
+  background: #fee2e2;
+  border-color: #e7a0a0;
+}
+
+.reservation-card .badge-cancelled::before {
+  content: "×";
+  color: #bd3030;
+  font-size: 14px;
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5efe3">
+  <title>Boardgame Café | ค้นหาเกมและจองโต๊ะ</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/status.css">
+  <link rel="stylesheet" href="/zones.css">
+  <link rel="stylesheet" href="/polish.css">
+</head>
+<body>
+  <header class="hero">
+    <nav><a class="brand" href="/">Boardgame &amp; Brew Café</a><div class="nav-links"><a class="api-link" href="/api-docs" target="_blank" rel="noreferrer">API Docs ↗</a></div></nav>
+    <div class="hero-copy"><p class="eyebrow">BOARDGAME CAFÉ · BANGKOK</p><h1>เกมดี ๆ<br><span>เริ่มที่โต๊ะนี้</span></h1><p>เลือกเกมที่ใช่ แล้วจองโต๊ะสำหรับแก๊งของคุณ</p></div>
+    <div class="hero-mark" aria-hidden="true">♟</div>
+  </header>
+  <div class="page-switcher-band"><nav class="page-switcher" aria-label="เปลี่ยนหน้า"><a class="page-tab is-active" href="/" aria-current="page"><span aria-hidden="true">♟</span> หน้าลูกค้า</a><a class="page-tab" href="/staff"><span aria-hidden="true">✦</span> หน้าจัดการร้าน</a></nav></div>
+  <main>
+    <section class="customer-zone" id="customer-zone" aria-labelledby="customer-zone-title">
+      <header class="zone-heading customer-heading"><span class="zone-icon" aria-hidden="true">♟</span><div><p class="eyebrow">GUEST EXPERIENCE</p><h2 id="customer-zone-title">โซนลูกค้า</h2><p>ค้นหาเกม อ่านรีวิว และจองโต๊ะสำหรับกลุ่มของคุณ</p></div></header>
+    <section class="toolbar" aria-label="ค้นหาเกม">
+      <div><p class="eyebrow">OUR COLLECTION</p><h2>เกมบนชั้น</h2></div>
+      <form id="search-form" class="search-form"><label>จำนวนผู้เล่น<input id="players" type="number" min="1" max="30" placeholder="เช่น 4"></label><button class="button button-dark" type="submit">ค้นหาเกม</button><button id="clear-search" class="button button-quiet" type="button">ดูทั้งหมด</button></form>
+    </section>
+    <p id="games-status" class="status" role="status" aria-live="polite"></p>
+    <section id="games" class="game-grid" aria-label="รายการบอร์ดเกม"></section>
+    <dialog id="game-dialog" class="game-dialog"><button type="button" class="dialog-close" aria-label="ปิด">×</button><div id="game-dialog-content"></div></dialog>
+
+    <section class="forms-section">
+      <div class="section-heading"><p class="eyebrow">MAKE IT A GAME NIGHT</p><h2>วางแผนค่ำคืนของคุณ</h2><p>จองโต๊ะพร้อมเลือกเกมที่อยากเล่น ระบบจะตรวจสอบวันหยุดให้โดยอัตโนมัติ</p></div>
+      <div class="form-grid">
+        <form id="reservation-form" class="panel">
+          <h3>จองโต๊ะ</h3>
+          <label>ชื่อผู้จอง<input name="customer_name" required maxlength="100" autocomplete="name"></label>
+          <label>เบอร์โทรศัพท์<input name="customer_phone" required maxlength="20" inputmode="tel" pattern="[0-9+() -]{8,20}" autocomplete="tel"></label>
+          <label>อีเมล (ไม่บังคับ)<input name="customer_email" type="email" maxlength="150" autocomplete="email"></label>
+          <div class="field-row"><label>วันที่<input name="reservation_date" type="date" required></label><label>เวลา<input name="reservation_time" type="time" required></label></div>
+          <label>จำนวนผู้เล่น<input name="party_size" type="number" min="1" max="30" required></label>
+          <label>เกมที่ต้องการ<select name="boardgame_ids" id="reservation-games" multiple size="4" required aria-describedby="select-help"></select><small id="select-help">ต้องเลือกอย่างน้อย 1 เกม · กด Ctrl (Windows) หรือ Command (Mac) เพื่อเลือกหลายเกม</small></label>
+          <button class="button button-accent" type="submit">ส่งคำขอจอง</button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+        <form id="review-form" class="panel">
+          <h3>รีวิวเกมที่เล่นแล้ว</h3>
+          <label>เลือกเกม<select name="boardgame_id" id="review-game" required></select></label>
+          <label>ชื่อของคุณ<input name="reviewer_name" required maxlength="100"></label>
+          <label>คะแนน<select name="rating" required><option value="">เลือกคะแนน</option><option value="5">5 · ยอดเยี่ยม</option><option value="4">4 · สนุกมาก</option><option value="3">3 · เพลินดี</option><option value="2">2 · ยังไม่ใช่</option><option value="1">1 · ไม่ถูกใจ</option></select></label>
+          <label>เล่าให้เราฟัง (ไม่บังคับ)<textarea name="comment" rows="3" maxlength="1000"></textarea></label>
+          <button class="button button-accent" type="submit">ส่งรีวิว</button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    </section>
+
+  </main>
+  <footer><span>Boardgame &amp; Brew Café</span><span>Play more, worry less.</span></footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>

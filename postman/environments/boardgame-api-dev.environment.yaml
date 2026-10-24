@@ -2,3 +2,9 @@ name: boardgame-api-dev
 values:
   - key: baseUrl
     value: 'http://localhost:3000'
+  - key: staffUsername
+    value: ''
+  - key: staffPassword
+    value: ''
+  - key: staffToken
+    value: ''

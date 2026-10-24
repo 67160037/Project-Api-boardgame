@@ -8,6 +8,25 @@
 			"type": "default",
 			"enabled": true
 		}
+		,
+		{
+			"key": "staffUsername",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "staffPassword",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "staffToken",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		}
 	],
 	"color": null,
 	"_postman_variable_scope": "environment",

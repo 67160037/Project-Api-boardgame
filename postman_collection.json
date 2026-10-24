@@ -2,12 +2,56 @@
   "info": {
     "_postman_id": "dab9511b-dd11-4ac8-a8d6-45c45a180124",
     "name": "Boardgame Café API",
-    "description": "โครงงานระยะที่ 2 (Pno 8) — ทดสอบทุก endpoint พร้อมตัวอย่าง response ที่บันทึกไว้ รันด้วย Newman ได้ (ลำดับ request มีความสำคัญ)",
+    "description": "Boardgame Café API — ล็อกอินพนักงานก่อนรัน requests ที่ต้องใช้สิทธิ์; ตั้ง staffUsername/staffPassword ใน Environment แล้ว collection จะใช้ JWT Bearer จาก access_token",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "56436330",
     "_collection_link": "https://go.postman.co/collection/56436330-dab9511b-dd11-4ac8-a8d6-45c45a180124?source=collection_link"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{staffToken}}", "type": "string" }]
+  },
   "item": [
+    {
+      "name": "Staff Auth",
+      "item": [
+        {
+          "name": "POST Staff Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Staff identity is returned\", function () { pm.expect(pm.response.json().data).to.have.property(\"username\"); });",
+                  "pm.environment.set(\"staffToken\", pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{staffUsername}}\",\n  \"password\": \"{{staffPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] },
+            "description": "เรียกก่อน request ที่ต้องใช้สิทธิ์; Postman จะบันทึก access_token ลง staffToken และแนบเป็น Authorization: Bearer ให้อัตโนมัติ"
+          },
+          "response": []
+        },
+        {
+          "name": "GET Staff Me (Bearer Auth)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test(\"Authenticated staff session\", function () { pm.response.to.have.status(200); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] },
+            "description": "ยืนยันว่า JWT ใน Authorization header ใช้งานได้"
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "System",
       "item": [
@@ -29,12 +73,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/",
+              "raw": "{{baseUrl}}/health",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                ""
+                "health"
               ]
             },
             "description": "ตรวจสอบสถานะ API"
@@ -46,12 +90,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/",
+                  "raw": "{{baseUrl}}/health",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
-                    ""
+                    "health"
                   ]
                 },
                 "description": "ตรวจสอบสถานะ API"
@@ -976,6 +1020,32 @@
               "body": "{\n  \"message\": \"สำเร็จ\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"reservation_date\": \"2026-08-19T17:00:00.000Z\",\n      \"reservation_time\": \"18:00:00\",\n      \"party_size\": 4,\n      \"status\": \"confirmed\",\n      \"customer_name\": \"วีระ ใจดี\",\n      \"customer_phone\": \"0812345678\",\n      \"boardgames\": [\n        \"Ticket to Ride\",\n        \"Catan\"\n      ]\n    },\n    {\n      \"id\": 2,\n      \"reservation_date\": \"2026-08-20T17:00:00.000Z\",\n      \"reservation_time\": \"19:30:00\",\n      \"party_size\": 2,\n      \"status\": \"pending\",\n      \"customer_name\": \"สุดา รักเกม\",\n      \"customer_phone\": \"0898765432\",\n      \"boardgames\": [\n        \"Codenames\"\n      ]\n    },\n    {\n      \"id\": 3,\n      \"reservation_date\": \"2026-08-21T17:00:00.000Z\",\n      \"reservation_time\": \"17:00:00\",\n      \"party_size\": 6,\n      \"status\": \"pending\",\n      \"customer_name\": \"ชูใจ บอร์ดเกมเมอร์\",\n      \"customer_phone\": \"0865554321\",\n      \"boardgames\": [\n        \"Ticket to Ride\",\n        \"Codenames\"\n      ]\n    },\n    {\n      \"id\": 4,\n      \"reservation_date\": \"2026-12-09T17:00:00.000Z\",\n      \"reservation_time\": \"18:00:00\",\n      \"party_size\": 4,\n      \"status\": \"pending\",\n      \"customer_name\": \"วีระ ใจดี\",\n      \"customer_phone\": \"0812345678\",\n      \"boardgames\": [\n        \"Carcassonne\"\n      ]\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "DELETE Reservation Permanently",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Reservation deleted\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response has message\", function () { pm.expect(pm.response.json()).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reservations", "{{reservationId}}"]
+            },
+            "description": "ลบคำขอจองถาวรและเกมที่เชื่อมอยู่; ต้องใช้ JWT พนักงาน; ตรวจ reservationId ให้ถูกก่อนส่ง"
+          },
+          "response": []
         },
         {
           "name": "PATCH Update Reservation Status",

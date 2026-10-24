@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9eee7">
+  <title>จัดการร้าน | Boardgame & Brew Café</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/status.css">
+  <link rel="stylesheet" href="/zones.css">
+  <link rel="stylesheet" href="/polish.css">
+</head>
+<body>
+  <header class="hero staff-hero">
+    <nav><a class="brand" href="/">Boardgame &amp; Brew Café</a><div class="nav-links"><a class="api-link" href="/api-docs" target="_blank" rel="noreferrer">API Docs ↗</a><button id="logout-button" class="button button-quiet" type="button">ออกจากระบบ</button></div></nav>
+    <div class="hero-copy"><p class="eyebrow">TEAM WORKSPACE</p><h1>จัดการร้าน<br><span>ได้ในที่เดียว</span></h1><p>รายการจองและเครื่องมือจัดการแคตตาล็อกสำหรับพนักงาน</p></div>
+    <div class="hero-mark" aria-hidden="true">✦</div>
+  </header>
+  <div class="page-switcher-band"><nav class="page-switcher" aria-label="เปลี่ยนหน้า"><a class="page-tab" href="/"><span aria-hidden="true">♟</span> หน้าลูกค้า</a><a class="page-tab is-active" href="/staff" aria-current="page"><span aria-hidden="true">✦</span> หน้าจัดการร้าน</a></nav></div>
+  <main>
+    <section class="staff-section staff-zone" aria-labelledby="staff-zone-title">
+      <header class="zone-heading staff-heading"><span class="zone-icon" aria-hidden="true">✦</span><div><p class="eyebrow">RESERVATION DESK</p><h2 id="staff-zone-title">รายการจอง</h2><p>ตรวจสอบคำขอและเปลี่ยนสถานะการจอง</p></div></header>
+      <p id="reservations-status" class="status" role="status" aria-live="polite"></p>
+      <div id="reservations" class="reservation-list"></div>
+      <div class="section-heading"><p class="eyebrow">CATALOG MANAGEMENT</p><h2>แคตตาล็อกและหมวดหมู่</h2><p>เพิ่ม แก้ไข หรือลบเกมและหมวดหมู่</p></div>
+      <div class="form-grid staff-tools">
+        <form id="game-admin-form" class="panel">
+          <h3>จัดการแคตตาล็อกเกม</h3>
+          <label>เกมที่ต้องการแก้ไข<select name="edit_id" id="edit-game"><option value="">เพิ่มเกมใหม่</option></select></label>
+          <label>ชื่อเกม<input name="name" required maxlength="150"></label>
+          <div class="field-row"><label>ผู้เล่นขั้นต่ำ<input name="min_players" type="number" min="1" required></label><label>ผู้เล่นสูงสุด<input name="max_players" type="number" min="1" required></label></div>
+          <label>หมวดหมู่<select name="category_id" id="game-category" required></select></label>
+          <div class="admin-actions"><button class="button button-accent" type="submit">เพิ่มเกมใหม่</button><button class="button button-dark" id="update-game" type="button" disabled>บันทึกการแก้ไข</button><button class="button button-quiet" id="delete-game" type="button" disabled>ลบเกม</button></div>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+        <form id="category-admin-form" class="panel">
+          <h3>จัดการหมวดหมู่</h3>
+          <label>หมวดหมู่ที่มีอยู่<select name="edit_id" id="edit-category"><option value="">เพิ่มหมวดหมู่ใหม่</option></select></label>
+          <label>ชื่อหมวดหมู่<input name="name" required maxlength="100"></label>
+          <div class="admin-actions"><button class="button button-accent" type="submit">เพิ่มหมวดหมู่</button><button class="button button-dark" id="update-category" type="button" disabled>เปลี่ยนชื่อ</button><button class="button button-quiet" id="delete-category" type="button" disabled>ลบหมวดหมู่</button></div>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <footer><a href="/" class="footer-link">← กลับไปหน้าลูกค้า</a><span>Boardgame &amp; Brew Café · Staff Workspace</span></footer>
+  <script src="/staff.js" defer></script>
+</body>
+</html>

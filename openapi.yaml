@@ -2,9 +2,11 @@ openapi: 3.0.3
 info:
   title: Boardgame Café API
   description: >
-    API ระบบข้อมูลบอร์ดเกมและการจองโต๊ะของคาเฟ่บอร์ดเกม (โครงงานระยะที่ 2 — Pno 8)
+    API ระบบข้อมูลบอร์ดเกมและการจองโต๊ะของคาเฟ่บอร์ดเกม (โครงงานระยะที่ 3 — Pno 8)
     ทุก error ใช้รูปแบบเดียวกันคือ `{ "error": { "code": "...", "message": "..." } }`
-    ระบบนี้ยังไม่มีการยืนยันตัวตน (ไม่มี JWT) ทุก endpoint เรียกได้โดยไม่ต้องส่ง token
+    ทุก response จะมี `X-Request-ID` สำหรับอ้างอิงคำขอใน server log
+    การจัดการข้อมูลและการดูรายการจองต้องใช้ JWT Bearer หรือ session cookie ของพนักงาน (HttpOnly, อายุ 8 ชั่วโมง)
+    API อาจตอบ 429 เมื่อ client IP เกิน quota ที่กำหนดด้วย RATE_LIMIT_MAX/RATE_LIMIT_WINDOW_MS
   version: 1.0.0
 servers:
   - url: http://localhost:3000
@@ -18,7 +20,18 @@ tags:
     description: จัดการหมวดหมู่บอร์ดเกม
   - name: Reservations
     description: จองโต๊ะพร้อมระบุเกม (ใช้ Transaction และตรวจวันหยุดจาก API ภายนอก)
+  - name: Staff Auth
+    description: สมัครบัญชีพนักงานแบบใช้ signup key, เข้าสู่ระบบ และจัดการ session
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    StaffSession:
+      type: apiKey
+      in: cookie
+      name: staff_session
   parameters:
     BoardgameId:
       name: id
@@ -146,6 +159,7 @@ components:
           reservation_date,
           reservation_time,
           party_size,
+          boardgame_ids,
         ]
       properties:
         customer_name: { type: string, example: "วีระ ใจดี" }
@@ -161,7 +175,8 @@ components:
         party_size: { type: integer, minimum: 1, example: 4 }
         boardgame_ids:
           type: array
-          description: รหัสบอร์ดเกมที่ต้องการเล่น (ไม่ระบุก็ได้) ทุก id ต้องมีอยู่จริง
+          minItems: 1
+          description: ต้องเลือกอย่างน้อยหนึ่งเกม; ทุก id ต้องมีอยู่จริง
           items: { type: integer }
           example: [1, 2]
     HolidayCheck:
@@ -235,6 +250,11 @@ components:
           items: { type: string }
           example: ["Ticket to Ride", "Catan"]
   responses:
+    Unauthorized:
+      description: ไม่มี session พนักงานหรือ session หมดอายุ (AUTH_REQUIRED)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
     ValidationError:
       description: ข้อมูลที่ส่งมาไม่ครบหรือไม่ถูกต้อง (VALIDATION_ERROR)
       content:
@@ -254,7 +274,81 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/ErrorResponse" }
 paths:
-  /:
+  /api/v1/auth/signup:
+    post:
+      tags: [Staff Auth]
+      summary: สร้างบัญชีพนักงานโดยใช้รหัสเปิดรับสมัคร
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [signup_key, username, password]
+              properties:
+                signup_key: { type: string }
+                username: { type: string, minLength: 3, maxLength: 50, pattern: '^[A-Za-z0-9_.-]+$' }
+                password: { type: string, minLength: 10, maxLength: 128 }
+      responses:
+        "201":
+          description: สร้างบัญชีสำเร็จ คืน JWT ใน access_token และตั้ง session cookie สำหรับหน้าเว็บ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string, description: JWT สำหรับ Authorization Bearer }
+                  token_type: { type: string, example: Bearer }
+                  expires_in: { type: integer, example: 28800 }
+                  data: { type: object, properties: { id: { type: integer }, username: { type: string } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { description: signup key ไม่ถูกต้อง }
+        "409": { description: ชื่อผู้ใช้ถูกใช้แล้ว }
+        "503": { description: ปิดการสมัครหรือยังไม่ได้ตั้งค่า AUTH_SECRET }
+  /api/v1/auth/login:
+    post:
+      tags: [Staff Auth]
+      summary: เข้าสู่ระบบพนักงาน
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, minLength: 10 }
+      responses:
+        "200":
+          description: เข้าสู่ระบบสำเร็จ คืน JWT ใน access_token และตั้ง session cookie สำหรับหน้าเว็บ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string, description: JWT สำหรับ Authorization Bearer }
+                  token_type: { type: string, example: Bearer }
+                  expires_in: { type: integer, example: 28800 }
+                  data: { type: object, properties: { id: { type: integer }, username: { type: string } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { description: ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง }
+        "503": { description: ยังไม่ได้ตั้งค่า AUTH_SECRET }
+  /api/v1/auth/logout:
+    post:
+      tags: [Staff Auth]
+      summary: ออกจากระบบและล้าง session cookie
+      responses:
+        "200": { description: ออกจากระบบแล้ว }
+  /api/v1/auth/me:
+    get:
+      tags: [Staff Auth]
+      summary: ตรวจสอบ session พนักงานปัจจุบัน
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
+      responses:
+        "200": { description: session ยังใช้งานได้ }
+        "401": { description: ไม่ได้เข้าสู่ระบบหรือ session หมดอายุ }
+  /health:
     get:
       tags: [System]
       summary: ตรวจสอบสถานะ API
@@ -280,13 +374,13 @@ paths:
           in: query
           required: false
           description: จำนวนผู้เล่นขั้นต่ำที่ต้องรองรับ
-          schema: { type: integer }
+          schema: { type: integer, minimum: 1 }
           example: 4
         - name: maxPlayers
           in: query
           required: false
           description: จำนวนผู้เล่นสูงสุดที่ต้องเล่นได้
-          schema: { type: integer }
+          schema: { type: integer, minimum: 1 }
           example: 6
       responses:
         "200":
@@ -300,10 +394,12 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/BoardgameSummary" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
       tags: [Boardgames]
       summary: เพิ่มบอร์ดเกม (Use Case 1)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       requestBody:
         required: true
         content:
@@ -327,6 +423,7 @@ paths:
                       min_players: { type: integer }
                       max_players: { type: integer }
                       category_id: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "400": { $ref: "#/components/responses/ValidationError" }
         "500": { $ref: "#/components/responses/InternalError" }
   /api/v1/boardgames/{id}:
@@ -350,6 +447,7 @@ paths:
     patch:
       tags: [Boardgames]
       summary: แก้ไขบอร์ดเกมบางฟิลด์ (Use Case 1)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       requestBody:
         required: true
         content:
@@ -361,12 +459,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     delete:
       tags: [Boardgames]
       summary: ลบบอร์ดเกม (Use Case 1)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       description: รีวิวและรายการเกมในการจองที่เกี่ยวข้องจะถูกลบตามไปด้วย (ON DELETE CASCADE)
       responses:
         "200":
@@ -374,6 +474,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
   /api/v1/boardgames/{id}/reviews:
@@ -444,6 +545,7 @@ paths:
     post:
       tags: [Categories]
       summary: เพิ่มหมวดหมู่ (Use Case 5)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       description: ชื่อหมวดหมู่ซ้ำกับที่มีอยู่ ระบบปัจจุบันตอบ 500
       requestBody:
         required: true
@@ -460,6 +562,7 @@ paths:
                 properties:
                   message: { type: string, example: "เพิ่มหมวดหมู่สำเร็จ" }
                   data: { $ref: "#/components/schemas/Category" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "400": { $ref: "#/components/responses/ValidationError" }
         "500": { $ref: "#/components/responses/InternalError" }
   /api/v1/categories/{id}:
@@ -468,6 +571,7 @@ paths:
     patch:
       tags: [Categories]
       summary: แก้ไขชื่อหมวดหมู่ (Use Case 5)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       requestBody:
         required: true
         content:
@@ -479,12 +583,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     delete:
       tags: [Categories]
       summary: ลบหมวดหมู่ (Use Case 5)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       description: ลบไม่ได้ถ้ายังมีบอร์ดเกมอยู่ในหมวดหมู่นี้ (ตอบ 409 CATEGORY_IN_USE)
       responses:
         "200":
@@ -492,6 +598,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
           description: มีบอร์ดเกมใช้หมวดหมู่นี้อยู่ (CATEGORY_IN_USE)
@@ -503,6 +610,7 @@ paths:
     get:
       tags: [Reservations]
       summary: ดูรายการจองทั้งหมด (Use Case 4)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       responses:
         "200":
           description: สำเร็จ เรียงตามวันและเวลาที่จอง
@@ -515,6 +623,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ReservationListItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
       tags: [Reservations]
@@ -543,6 +652,7 @@ paths:
     patch:
       tags: [Reservations]
       summary: อัปเดตสถานะการจอง (Use Case 4)
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
       requestBody:
         required: true
         content:
@@ -561,6 +671,24 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /api/v1/reservations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+    delete:
+      tags: [Reservations]
+      summary: ลบคำขอจองถาวร (พนักงานเท่านั้น)
+      description: ลบ reservation และแถวที่เชื่อมใน reservation_games; ไม่ลบข้อมูลลูกค้า
+      security: [{ BearerAuth: [] }, { StaffSession: [] }]
+      responses:
+        "200":
+          description: ลบคำขอจองสำเร็จ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }

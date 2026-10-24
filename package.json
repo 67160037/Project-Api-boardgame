@@ -2,11 +2,14 @@
   "name": "project-api-67160037",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "newman": "newman run postman_collection.json -e environment.json"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate:auth": "node scripts/migrate-auth.js",
+    "newman": "newman run postman_collection.json -e environment.json",
+    "test": "node --test --experimental-test-coverage test/external-api.test.js test/middleware.test.js test/staff-auth.test.js test/staff-routes.test.js test/rate-limit.test.js",
+    "coverage": "node --test --experimental-test-coverage test/external-api.test.js test/middleware.test.js test/staff-auth.test.js test/staff-routes.test.js test/rate-limit.test.js"
   },
   "keywords": [],
   "author": "",
